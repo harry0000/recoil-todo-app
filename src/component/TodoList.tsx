@@ -6,10 +6,19 @@ import TodoListFilters from './TodoListFilters';
 import TodoItemCreator from './TodoItemCreator';
 import TodoItem from './TodoItem';
 
-import { filteredTodoListState } from '../state/recoil_state';
+import { todoState } from '../state/recoil_state';
+
+const TodoItemList = () => {
+  const todoItemIds = useRecoilValue(todoState.filteredTodoListState);
+
+  return (
+    <div>
+      {todoItemIds.map((id) => (<TodoItem key={id} itemId={id} />))}
+    </div>
+  )
+};
 
 const TodoList = () => {
-  const todoList = useRecoilValue(filteredTodoListState);
   return (
     <>
       <TodoListStats />
@@ -17,9 +26,7 @@ const TodoList = () => {
         <TodoItemCreator />
         <TodoListFilters />
       </div>
-      {todoList.map((todoItem) => (
-        <TodoItem item={todoItem} key={todoItem.id} />
-      ))}
+      <TodoItemList />
     </>
   );
 };

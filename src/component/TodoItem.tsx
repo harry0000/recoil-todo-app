@@ -1,57 +1,53 @@
-import React, { ChangeEventHandler } from 'react';
-import { useRecoilState } from 'recoil';
+import React from 'react';
+import PropTypes from 'prop-types';
+import { useRecoilCallback, useRecoilValue } from 'recoil';
 
-import type { TodoItem as Item } from '../domain/TodoItem';
+import { TodoItemId } from '../domain/TodoItem';
 
-import { todoListState } from '../state/recoil_state';
+import { todoState } from '../state/recoil_state';
 
-const replaceItemAtIndex = (arr: ReadonlyArray<Item>, index: number, newValue: Item) => {
-  return [...arr.slice(0, index), newValue, ...arr.slice(index + 1)];
-};
-
-const removeItemAtIndex = (arr: ReadonlyArray<Item>, index: number) => {
-  return [...arr.slice(0, index), ...arr.slice(index + 1)];
-};
-
-const TodoItem: React.FC<{ item: Item }> = ({ item }) => {
-  const [todoList, setTodoList] = useRecoilState(todoListState);
-  const index = todoList.findIndex((listItem) => listItem === item);
-
-  const editItemText: ChangeEventHandler<HTMLInputElement> = ({ target: { value } }) => {
-    const newList = replaceItemAtIndex(todoList, index, {
-      ...item,
-      text: value
-    });
-
-    setTodoList(newList);
-  };
-
-  const toggleItemCompletion = () => {
-    const newList = replaceItemAtIndex(todoList, index, {
-      ...item,
-      isComplete: !item.isComplete
-    });
-
-    setTodoList(newList);
-  };
-
-  const deleteItem = () => {
-    const newList = removeItemAtIndex(todoList, index);
-
-    setTodoList(newList);
-  };
+const TodoItemTextField: React.FC<{ itemId: TodoItemId }> = ({ itemId }) => {
+  const text = useRecoilValue(todoState.todoItemTextState(itemId));
+  const editText = useRecoilCallback(todoState.editTodoItemText);
 
   return (
-    <div>
-      <input type="text" value={item.text} onChange={editItemText} />
-      <input
-        type="checkbox"
-        checked={item.isComplete}
-        onChange={toggleItemCompletion}
-      />
-      <button onClick={deleteItem}>X</button>
-    </div>
+    <input
+      type="text"
+      value={text}
+      onChange={({ target: { value } }) => { editText(itemId, value); }}
+    />
   );
 };
+
+const TodoItemCompletionCheckbox: React.FC<{ itemId: TodoItemId }> = ({ itemId }) => {
+  const isComplete = useRecoilValue(todoState.todoItemCompletionState(itemId));
+  const toggleCompletion = useRecoilCallback(todoState.toggleTodoItemCompletion);
+
+  return (
+    <input
+      type="checkbox"
+      checked={isComplete}
+      onChange={() => { toggleCompletion(itemId); }}
+    />
+  );
+};
+
+const TodoItemDeleteButton: React.FC<{ itemId: TodoItemId }> = ({ itemId }) => {
+  const deleteItem = useRecoilCallback(todoState.deleteTodoItem);
+
+  return (<button onClick={() => { deleteItem(itemId); }}>X</button>);
+};
+
+const TodoItem: React.FC<{ itemId: TodoItemId }> = React.memo(({ itemId }) => {
+  return (
+    <div>
+      <TodoItemTextField itemId={itemId} />
+      <TodoItemCompletionCheckbox itemId={itemId} />
+      <TodoItemDeleteButton itemId={itemId} />
+    </div>
+  );
+});
+TodoItem.displayName = 'TodoItem';
+TodoItem.propTypes = { itemId: PropTypes.number.isRequired };
 
 export default TodoItem;
